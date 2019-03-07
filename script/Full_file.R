@@ -3,23 +3,134 @@
 # 07/03/2019
 # Amazon Web Scraping
 
-### Packages 
+### Preparing Training sets (Small Matrix for Iphone and Galaxy)
+
+## Packages 
 
 pacman::p_load(plot3Drgl, rgl, car, ggplot2,
                plotly, rstudioapi, corrplot, 
                rgl, manipulateWidget, reshape, 
-               reshape2, Rfast, randomForest, esquisse)
+               reshape2, Rfast, randomForest, 
+               esquisse, doParallel)
 
-### Github
+## Github
 
-current_path = rstudioapi::getActiveDocumentContext()$path #save working directory
+current_path = rstudioapi::getActiveDocumentContext()$path # save working directory
 setwd(dirname(current_path))
 setwd("..")
 
+## Data files 
+
+galaxy_matr <- read.csv(
+  "C:/Users/Dell/Desktop/Ubiqum Data Analytics/AWS Web Scrapping/Web-scrapping-customers-sentiment/datasets/galaxy_smallmatrix_labeled_8d.csv",
+  header = TRUE)
+
+iphone_matr <- read.csv(
+  "C:/Users/Dell/Desktop/Ubiqum Data Analytics/AWS Web Scrapping/Web-scrapping-customers-sentiment/datasets/iphone_smallmatrix_labeled_8d.csv",
+  header = TRUE)
+
+## Setup Paralell Programming 
+
+detectCores() # 4 cores available
+cluster <- makeCluster(2)
+registerDoParallel(cluster) # Register cluster
+getDoParWorkers() # check if there are now 2 cores working
+# stopCluster(cluster) !do not forget to stop your cluster 
+
+
+#### Exploring the data (Galaxy and Iphone) ####
+
+summary(iphone_matr$iphone)
+str(iphone_matr$iphone)
+summary(galaxy_matr$samsunggalaxy)
+str(galaxy_matr$samsunggalaxy)
+
+# Plotting it
+
+plot_ly(iphone_matr, x= ~iphone_matr$iphonesentiment, type='histogram')
+plot_ly(iphone_matr, x= ~iphone_matr$iphone, type='histogram')
+plot_ly(galaxy_matr, x= ~galaxy_matr$galaxysentiment, type='histogram')
+plot_ly(galaxy_matr, x= ~galaxy_matr$samsunggalaxy, type='histogram')
+
+# Check for NAs
+
+apply(iphone_matr, 2, function(x) any(is.na(x))) # no NA in iPhone data
+apply(galaxy_matr, 2, function(x) any(is.na(x))) # no NA in Galaxy data
+
+# Delete duplicates
+
+iphone_unique_m <- unique(iphone_matr) # from 12973 obs to 2582
+galaxy_unique_m <- unique(galaxy_matr) # from 12973 obs to 2566
 
 
 
+## Correlation Matrix with solely iPhone data  
 
+iphone_vars <- c("iphone", "ios", "iphonecampos", "iphonecamneg", "iphonecamunc", 
+                 "iphonedispos", "iphonedisneg", "iphonedisunc", "iphoneperpos", 
+                 "iphoneperneg", "iphoneperunc", "iosperpos", "iosperneg", "iosperunc",
+                 "iphonesentiment")
+
+pure_iphone_df <- iphone_matr[,iphone_vars]
+
+# delete rows that do not include terms
+pure_iphone_df <- pure_iphone_df[!(pure_iphone_df$iphone==0 & pure_iphone_df$ios==0),] 
+
+# delete duplicates as we are interested in the unique data 
+pure_iphone_df <- unique(pure_iphone_df)
+
+# Create a correlation matrix 
+corr_iphone <- cor(pure_iphone_df)
+corrplot(corr_iphone, method = "number",tl.cex= 0.7, number.cex = 0.8)
+
+# Create decision tree
+Iphone.tree <- ctree_control(maxdepth = 10)
+IphoneDT <- ctree (iphonesentiment ~ ., data = pure_iphone_df)
+plot(IphoneDT) 
+
+# Linear Relationships are fairly weak as they are not strongly correlated
+# Decision Tree highlights: iOs neg, iOs pos
+
+
+
+## Correlation Matrix with solely Galaxy data 
+
+galaxy_vars <- c("samsunggalaxy", "googleandroid", "samsungcampos", "samsungcamneg", "samsungcamunc", 
+                 "samsungdispos", "samsungdisneg", "samsungdisunc", "samsungperpos", 
+                 "samsungperneg", "samsungperunc", "googleperpos", "googleperneg", "googleperunc",
+                 "galaxysentiment")
+
+pure_galaxy_df <- galaxy_matr[,galaxy_vars]
+
+# delete rows that do not include terms
+pure_galaxy_df <- pure_galaxy_df[!(pure_galaxy_df$samsunggalaxy==0 & pure_galaxy_df$googleandroid==0),] 
+
+# delete duplicates as we are interested in the unique data 
+pure_galaxy_df <- unique(pure_galaxy_df)
+
+# Create a correlation matrix 
+corr_galaxy <- cor(pure_galaxy_df)
+corrplot(corr_galaxy, method = "number",tl.cex= 0.7, number.cex = 0.8)
+
+# Create decision tree
+Galaxy.tree <- ctree_control(maxdepth = 10)
+GalaxyDT <- ctree (galaxysentiment ~ ., data = pure_galaxy_df)
+plot(GalaxyDT) 
+
+# No significant relationship predicts sentiment towards galaxy
+
+
+### Feature Variance 
+
+## NearZeroVariance of columns 
+
+# Iphone dataset without duplicates
+iphone_nzv_metr <- nearZeroVar(iphone_unique_m, saveMetrics = T)
+sum(iphone_nzv_metr$nzv=="TRUE") #45 are near 0 Variance
+
+# Galaxy dataset without duplicates
+galaxy_nzv_metr <- nearZeroVar(galaxy_unique_m, saveMetrics = T)
+sum(galaxy_nzv_metr$nzv=="TRUE") #45 are near 0 Variance
 
 
 
