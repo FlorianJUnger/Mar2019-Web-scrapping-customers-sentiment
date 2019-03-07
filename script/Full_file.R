@@ -32,7 +32,7 @@ iphone_matr <- read.csv(
 ## Setup Paralell Programming 
 
 detectCores() # 4 cores available
-cluster <- makeCluster(2)
+cluster <- makeCluster(3)
 registerDoParallel(cluster) # Register cluster
 getDoParWorkers() # check if there are now 2 cores working
 # stopCluster(cluster) !do not forget to stop your cluster 
@@ -128,9 +128,16 @@ plot(GalaxyDT)
 iphone_nzv_metr <- nearZeroVar(iphone_unique_m, saveMetrics = T)
 sum(iphone_nzv_metr$nzv=="TRUE") #45 are near 0 Variance
 
+iphone_nzv <- nearZeroVar(iphone_unique_m, saveMetrics = F) # all NZV columns
+
+iphone_un_nozv <- iphone_unique_m[,-iphone_nzv] # final set
+
+
 # Galaxy dataset without duplicates
 galaxy_nzv_metr <- nearZeroVar(galaxy_unique_m, saveMetrics = T)
 sum(galaxy_nzv_metr$nzv=="TRUE") #45 are near 0 Variance
 
+galaxy_nzv <- nearZeroVar(galaxy_unique_m, saveMetrics = F)
+galaxy_un_nozv <- galaxy_unique_m[, -galaxy_nzv] # final galaxy set
 
 
