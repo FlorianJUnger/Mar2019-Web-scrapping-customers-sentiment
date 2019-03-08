@@ -126,7 +126,7 @@ plot(GalaxyDT)
 
 # Iphone dataset without duplicates
 iphone_nzv_metr <- nearZeroVar(iphone_unique_m, saveMetrics = T)
-sum(iphone_nzv_metr$nzv=="TRUE") #45 are near 0 Variance
+sum(iphone_nzv_metr$nzv=="TRUE") # 45 are near 0 Variance
 
 iphone_nzv <- nearZeroVar(iphone_unique_m, saveMetrics = F) # all NZV columns
 
@@ -135,9 +135,56 @@ iphone_un_nozv <- iphone_unique_m[,-iphone_nzv] # final set
 
 # Galaxy dataset without duplicates
 galaxy_nzv_metr <- nearZeroVar(galaxy_unique_m, saveMetrics = T)
-sum(galaxy_nzv_metr$nzv=="TRUE") #45 are near 0 Variance
+sum(galaxy_nzv_metr$nzv=="TRUE") # 45 are near 0 Variance
 
 galaxy_nzv <- nearZeroVar(galaxy_unique_m, saveMetrics = F)
 galaxy_un_nozv <- galaxy_unique_m[, -galaxy_nzv] # final galaxy set
+
+
+### Recursive Feature Elimination 
+
+set.seed(123)
+RFE_ctrl <- rfeControl(functions = rfFuncs, method = "repeatedcv", # RF, cross-validation 
+                   repeats = 5, verbose = FALSE)
+# iPhone (all variabels)
+start_rfe_58var <- Sys.time()
+rfe_resu_58var <- rfe(iphone_unique_m[,1:58], 
+                      iphone_unique_m$iphonesentiment, 
+                      sizes=(1:58), 
+                      rfeControl=RFE_ctrl)
+stop_rfe_58var <- Sys.time()
+time_rfe_58var <- stop_rfe_58var - start_rfe_58var
+
+saveRDS(rfe_resu_58var, "RFE58variPhone.rds")
+readRDS("RFE58variPhone.rds")
+
+rfe_resu_58var # results = 17 variables (similar to nzv)
+plot(rfe_resu_58var, type=c("g", "o"))
+
+# create new df with variables from RFE
+iphone_real <- iphone_unique_m[, predictors(rfe_resu_58var)]
+
+
+# Galaxy (all variabels)
+galaxySample <- galaxy_unique_m[sample(1:nrow(galaxy_unique_m), 400, replace=FALSE),]
+
+start_rfe_58var_ga <- Sys.time()
+rfe_resu_58var_ga <- rfe(galaxySample[,1:58], 
+                         galaxySample$galaxysentiment, 
+                      sizes=(1:58), 
+                      rfeControl=RFE_ctrl)
+stop_rfe_58var_ga <- Sys.time()
+time_rfe_58var_ga <- stop_rfe_58var_ga - start_rfe_58var_ga
+
+saveRDS(rfe_resu_58var_ga, "RFE58varGalaxy.rds")
+readRDS("RFE58varGalaxy.rds")
+
+rfe_resu_58var_ga # results = 17 variables (similar to nzv)
+plot(rfe_resu_58var_ga, type=c("g", "o"))
+
+# create new df with variables from RFE
+galaxy_real <- galaxy_unique_m[, predictors(rfe_resu_58var_ga)]
+
+
 
 
