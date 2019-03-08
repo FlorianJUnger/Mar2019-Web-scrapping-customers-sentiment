@@ -116,7 +116,7 @@ corrplot(corr_galaxy, method = "number",tl.cex= 0.7, number.cex = 0.8)
 Galaxy.tree <- ctree_control(maxdepth = 10)
 GalaxyDT <- ctree (galaxysentiment ~ ., data = pure_galaxy_df)
 plot(GalaxyDT) 
-
+varImp(GalaxyDT)
 # No significant relationship predicts sentiment towards galaxy
 
 
@@ -184,7 +184,6 @@ plot(rfe_resu_58var_ga, type=c("g", "o"))
 
 # create new df with variables from RFE
 galaxy_real <- galaxy_unique_m[, predictors(rfe_resu_58var_ga)]
-
 
 
 
