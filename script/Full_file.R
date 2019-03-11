@@ -11,7 +11,7 @@ pacman::p_load(plot3Drgl, rgl, car, ggplot2,
                plotly, rstudioapi, corrplot, 
                rgl, manipulateWidget, reshape, 
                reshape2, Rfast, randomForest, 
-               esquisse, doParallel)
+               esquisse, doParallel, kknn)
 
 ## Github
 
@@ -212,9 +212,12 @@ rf_nzv_iphone_mdl <- randomForest(y = iphone_nzv_train$iphonesentiment,
                                   x = iphone_nzv_train[iph_nzv_vec_rest], importance = T, ntree = 100,
                                   mtry = 2, trControl = control)
 
+rf_nzv_iphone_mdl_car <- caret::train(iphonesentiment~.,
+                         data = iphone_nzv_train, method = "rf", trControl=control,
+                         tuneLength = 2)
 
 
-
+# Kknn
 
 
 
