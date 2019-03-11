@@ -11,7 +11,8 @@ pacman::p_load(plot3Drgl, rgl, car, ggplot2,
                plotly, rstudioapi, corrplot, 
                rgl, manipulateWidget, reshape, 
                reshape2, Rfast, randomForest, 
-               esquisse, doParallel, kknn)
+               esquisse, doParallel, kknn, C50,
+               e1071)
 
 ## Github
 
@@ -197,6 +198,7 @@ iphone_nzv_train <- iphone_un_nozv[iphone.nzv.partition,]
 iphone_nzv_test <- iphone_un_nozv[-iphone.nzv.partition,]
 
 # RF
+
 control <- trainControl(method = "repeatedcv", number = 10, repeats = 2, returnData = T)
 
 # best mtry 
@@ -216,14 +218,47 @@ rf_nzv_iphone_mdl_car <- caret::train(iphonesentiment~.,
                          data = iphone_nzv_train, method = "rf", trControl=control,
                          tuneLength = 2)
 
-
 # Kknn
 
+kknn_nzv_iphone_mdl <- train.kknn(formula = iphonesentiment~., data = iphone_nzv_train, kmax = 11,
+                                 distance = 2, kernel = "optimal", trControl = control)
+
+kknn_nzv_iphone_mdl_cv <- cv.kknn(formula = iphonesentiment~., data = iphone_nzv_train,
+                                  kcv = 10)
+
+# C5.0
+
+C5iphone_nzv_train <- iphone_nzv_train
+C5iphone_nzv_train$iphonesentiment <- as.factor( #change to factor
+  C5iphone_nzv_train$iphonesentiment)
+
+C5_nzv_iphone_mdl <- C50::C5.0(x = C5iphone_nzv_train[,iph_nzv_vec_rest], 
+                               y = C5iphone_nzv_train$iphonesentiment, trControl = control)
+
+# SVM
+
+svm_nzv_iphone_mdl <- svm(formula = iphonesentiment~., data = iphone_nzv_train, 
+                            trControl = control, scale = T)
+
+# Models
+svm_nzv_iphone_mdl
+C5_nzv_iphone_mdl
+kknn_nzv_iphone_mdl_cv
+kknn_nzv_iphone_mdl
+rf_nzv_iphone_mdl
+rf_nzv_iphone_mdl_car
 
 
+## predict 
+pred_rf_iph_nzv_caret <- predict(rf_nzv_iphone_mdl_car,iphone_nzv_test)
+pred_rf_iph_nzv_rfmdl <- predict(rf_nzv_iphone_mdl,iphone_nzv_test)
+pred_kknn_iph_nzv <- predict(kknn_nzv_iphone_mdl,iphone_nzv_test)
+pred_C5_nzv_iphone_mdl <- predict(C5_nzv_iphone_mdl,iphone_nzv_test)
+pred_svm_nzv_iphone_mdl <- predict(svm_nzv_iphone_mdl,iphone_nzv_test)
 
-
-
+# postresamples
+PR_rf_iph_nzv_caret <- postResample(pred = pred_rf_iph_nzv_caret, obs = iphone_nzv_test$iphonesentiment)
+PR_rf_iph_nzv_rfmdl <- postResample(pred = pred_rf_iph_nzv_rfmdl, obs = iphone_nzv_test$iphonesentiment)
 
 
 
