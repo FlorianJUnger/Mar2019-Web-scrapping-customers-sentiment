@@ -260,11 +260,14 @@ pred_svm_nzv_iphone_mdl <- predict(svm_nzv_iphone_mdl,iphone_nzv_test)
 PR_rf_iph_nzv_caret <- postResample(pred = pred_rf_iph_nzv_caret, obs = iphone_nzv_test$iphonesentiment)
 PR_rf_iph_nzv_rfmdl <- postResample(pred = pred_rf_iph_nzv_rfmdl, obs = iphone_nzv_test$iphonesentiment)
 PR_kknn_iph_nzv <- postResample(pred = pred_kknn_iph_nzv, obs = iphone_nzv_test$iphonesentiment)
+PR_svm_nzv_iphone_mdl <- postResample(pred = pred_svm_nzv_iphone_mdl, obs = iphone_nzv_test$iphonesentiment)
 
-#PR_C5_nzv_iphone_mdl <- confusionMatrix(pred_C5_nzv_iphone_mdl, iphone_nzv_test$iphonesentiment)
+C5iphone_nzv_test <- iphone_nzv_test
+C5iphone_nzv_test$predictsentiment <- pred_C5_nzv_iphone_mdl
+PR_C5_nzv_iphone_mdl <- confusionMatrix(pred_C5_nzv_iphone_mdl, C5iphone_nzv_test$predictsentiment)
+
 #PR_C5_nzv_iphone_mdl <- postResample(pred = pred_C5_nzv_iphone_mdl, obs = iphone_nzv_test$iphonesentiment)
 
-PR_svm_nzv_iphone_mdl <- postResample(pred = pred_svm_nzv_iphone_mdl, obs = iphone_nzv_test$iphonesentiment)
 
 
 
