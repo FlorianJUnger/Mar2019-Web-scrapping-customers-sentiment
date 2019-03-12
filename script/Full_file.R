@@ -310,23 +310,23 @@ setnames(Results_NZV_class,
          new = c("RF_RFPack", "RF_Caret", "KKNN", "SVM"))
 
 # Combine Results
-Results_NZV_class$Approach <- "Near_Zero_Variance"
+Results_NZV_class$Approach <- "Near_Zero_Var"
 Results_PCA_class$Approach <- "PCA"
 
 Results_overall <- rbind(Results_NZV_class, Results_PCA_class)
 Results_Kappa <- Results_overall[-c(1,3),]
 Results_Accuracy <- Results_overall[-c(2,4),]
 
+Res_Kappa_melt <- melt(Results_Kappa)
+Res_Acc_melt <- melt(Results_Accuracy)
 
-#### APPROCH: Assign Parameters to the variables ####
+# Near-Zero-Variance approach delivers better results
+ggplot(Res_Kappa_melt, aes(x = variable,y=value,fill=variable)) + geom_bar(stat = "identity")+facet_wrap(~Approach)+
+  coord_flip()+ggtitle("Kappa Comparison between NZV and PCA Approach")
+ggplot(Res_Acc_melt, aes(x = variable,y=value,fill=variable)) + geom_bar(stat = "identity")+facet_wrap(~Approach)+
+  coord_flip()+ggtitle("Accuracy Comparison between NZV and PCA Approach")
 
-set.seed(123)
-# data = iphone_unique_m (whole set)
-# training_data = iphone_unique_train
-# test_data = iphone_unique_test
 
-A3_train <- iphone_unique_train[,iphone_vars]
-A3_test <- iphone_unique_test[,iphone_vars]
 
 
 
