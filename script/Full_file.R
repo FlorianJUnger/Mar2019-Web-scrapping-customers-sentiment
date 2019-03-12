@@ -332,9 +332,9 @@ ggplot(Res_Acc_melt, aes(x = variable,y=value,fill=variable)) + geom_bar(stat = 
 
 
 #### Apply model to the new matrix ####
-
-
-
+# same preprocess as t
+large_matrix$iphonesentiment_RF <- predict(rf_nzv_iphone_mdl, large_matrix)
+histogram(large_matrix$iphonesentiment_RF) #class imbalance
 
 
 
