@@ -30,6 +30,10 @@ iphone_matr <- read.csv(
   "C:/Users/Dell/Desktop/Ubiqum Data Analytics/AWS Web Scrapping/Web-scrapping-customers-sentiment/datasets/iphone_smallmatrix_labeled_8d.csv",
   header = TRUE)
 
+large_matrix <- read.csv(
+  "C:/Users/Dell/Desktop/Ubiqum Data Analytics/AWS Web Scrapping/Web-scrapping-customers-sentiment/datasets/Unified_Monstrous_LM.csv",
+  header = TRUE)
+
 ## Setup Paralell Programming 
 
 detectCores() # 4 cores available
@@ -121,7 +125,7 @@ varImp(GalaxyDT)
 
 #### Creating data sets #### 
 
-## NearZeroVariance of columns 
+#### NearZeroVariance of columns ####
 
 # Iphone dataset without duplicates
 iphone_nzv_metr <- nearZeroVar(iphone_unique_m, saveMetrics = T)
@@ -139,7 +143,7 @@ galaxy_nzv <- nearZeroVar(galaxy_unique_m, saveMetrics = F)
 galaxy_un_nozv <- galaxy_unique_m[, -galaxy_nzv] # final galaxy set
 
 
-### Recursive Feature Elimination 
+#### Recursive Feature Elimination ####
 
 set.seed(123)
 RFE_ctrl <- rfeControl(functions = rfFuncs, method = "repeatedcv", # RF, cross-validation 
@@ -186,7 +190,7 @@ plot(rfe_resu_58var_ga, type=c("g", "o"))
 galaxy_real <- galaxy_unique_m[, predictors(rfe_resu_58var_ga)]
 
 
-### Principal Component Analysis 
+#### Principal Component Analysis ####
 
 # removes all of your features and replaces them with mathematical representations of their variance
 # data = training and testing from iphone_unique_m (no feature selection) 
@@ -327,7 +331,7 @@ ggplot(Res_Acc_melt, aes(x = variable,y=value,fill=variable)) + geom_bar(stat = 
   coord_flip()+ggtitle("Accuracy Comparison between NZV and PCA Approach")
 
 
-
+#### Apply model to the new matrix ####
 
 
 
