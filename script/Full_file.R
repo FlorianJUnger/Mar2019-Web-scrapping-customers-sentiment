@@ -300,16 +300,48 @@ PR_rf_iph_nzv_rfmdl <- as.data.frame(postResample(pred = pred_rf_iph_nzv_rfmdl, 
 PR_kknn_iph_nzv <- as.data.frame(postResample(pred = pred_kknn_iph_nzv, obs = iphone_nzv_test$iphonesentiment))
 PR_svm_nzv_iphone_mdl <- as.data.frame(postResample(pred = pred_svm_nzv_iphone_mdl, obs = iphone_nzv_test$iphonesentiment))
 
-
 # Results
-Results_NZV_class <- cbind(PR_rf_iph_nzv_caret, PR_rf_iph_nzv_rfmdl, PR_kknn_iph_nzv, PR_svm_nzv_iphone_mdl)
-
-setnames(Results_PCA_class, 
-         old = c("postResample(pred = Pred_rf_pca_iphone, obs = test.iphone.pca$iphonesentiment)",
-                 "postResample(pred = Pred_rf_pca_iphone_car, obs = test.iphone.pca$iphonesentiment)",
-                 "postResample(pred = Pred_kknn_pca_iphone, obs = test.iphone.pca$iphonesentiment)",
-                 "postResample(pred = Pred_svm_cv_pca_iphone, obs = test.iphone.pca$iphonesentiment)"), 
+Results_NZV_class <- cbind(PR_rf_iph_nzv_rfmdl, PR_rf_iph_nzv_caret, PR_kknn_iph_nzv, PR_svm_nzv_iphone_mdl)
+setnames(Results_NZV_class, 
+         old = c("postResample(pred = pred_rf_iph_nzv_rfmdl, obs = iphone_nzv_test$iphonesentiment)",
+                 "postResample(pred = pred_rf_iph_nzv_caret, obs = iphone_nzv_test$iphonesentiment)",
+                 "postResample(pred = pred_kknn_iph_nzv, obs = iphone_nzv_test$iphonesentiment)",
+                 "postResample(pred = pred_svm_nzv_iphone_mdl, obs = iphone_nzv_test$iphonesentiment)"), 
          new = c("RF_RFPack", "RF_Caret", "KKNN", "SVM"))
+
+# Combine Results
+Results_NZV_class$Approach <- "Near_Zero_Variance"
+Results_PCA_class$Approach <- "PCA"
+
+Results_overall <- rbind(Results_NZV_class, Results_PCA_class)
+Results_Kappa <- Results_overall[-c(1,3),]
+Results_Accuracy <- Results_overall[-c(2,4),]
+
+
+#### APPROCH: Assign Parameters to the variables ####
+
+set.seed(123)
+# data = iphone_unique_m (whole set)
+# training_data = iphone_unique_train
+# test_data = iphone_unique_test
+
+A3_train <- iphone_unique_train[,iphone_vars]
+A3_test <- iphone_unique_test[,iphone_vars]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
