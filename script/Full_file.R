@@ -222,112 +222,94 @@ str(train.iphone.pca)
 #### Model development ####
 set.seed(123)
 
-#### PCA data ####
+#### APPROACH: PCA data ####
 
 ### Train the models
 
 ## Model 1: RF with RF package
+control <- trainControl(method = "repeatedcv", number = 10, repeats = 2, returnData = T)
 mtry_rf_pca_iphone <- tuneRF(train.iphone.pca[,-30], train.iphone.pca[,30], 
                              ntreeTry = 100, stepFactor = 2, improve = 0.05, trace = TRUE, plot = TRUE)
-
 rf_pca_iphone_mdl <- randomForest(y = train.iphone.pca[,30], x = train.iphone.pca[,-30], 
                                   importance = T, ntree = 100, mtry = 3, trControl = control)
-
 ## Model 2: RF with caret package
 rf_pca_iphone_mdl_car <- caret::train(iphonesentiment~., data = train.iphone.pca, 
                                       method = "rf", trControl=control, tuneLength = 2)
 ## Model 3: Kknn with train.kknn
 kknn_pca_iphone_mdl <- train.kknn(formula = iphonesentiment~., data = train.iphone.pca, kmax = 11,
                                   distance = 2, kernel = "optimal", trControl = control)
-
-## Model 4: Kknn with cv.kknn
-kknn_pca_iphone_mdl_cv <- cv.kknn(formula = iphonesentiment~., data = train.iphone.pca,kcv = 10)
-
-# Model 5: SVM
+# Model 4: SVM
 svm_pca_iphone_mdl <- svm(formula = iphonesentiment~., data = train.iphone.pca, trControl = control, scale = T)
 
 ### Test the models 
 
 ## predict 
 Pred_rf_pca_iphone <- predict(rf_pca_iphone_mdl,test.iphone.pca)
+Pred_rf_pca_iphone_car <- predict(rf_pca_iphone_mdl_car,test.iphone.pca)
+Pred_kknn_pca_iphone <- predict(kknn_pca_iphone_mdl,test.iphone.pca)
+Pred_svm_cv_pca_iphone <- predict(svm_pca_iphone_mdl,test.iphone.pca)
 
-### Postresamples
-PR_rf_pca_rfmdl <- postResample(pred = Pred_rf_pca_iphone, obs = test.iphone.pca$iphonesentiment)
+## Postresamples
+PR_rf_pca_rfmdl <- as.data.frame(postResample(pred = Pred_rf_pca_iphone, obs = test.iphone.pca$iphonesentiment))
+PR_rf_pca_caret <- as.data.frame(postResample(pred = Pred_rf_pca_iphone_car, obs = test.iphone.pca$iphonesentiment))
+PR_knn_pca <- as.data.frame(postResample(pred = Pred_kknn_pca_iphone, obs = test.iphone.pca$iphonesentiment))
+PR_svm_pca <- as.data.frame(postResample(pred = Pred_svm_cv_pca_iphone, obs = test.iphone.pca$iphonesentiment))
 
+Results_PCA_class <- cbind(PR_rf_pca_rfmdl, PR_rf_pca_caret, PR_knn_pca, PR_svm_pca)
+setnames(Results_PCA_class, 
+         old = c("postResample(pred = Pred_rf_pca_iphone, obs = test.iphone.pca$iphonesentiment)",
+                 "postResample(pred = Pred_rf_pca_iphone_car, obs = test.iphone.pca$iphonesentiment)",
+                 "postResample(pred = Pred_kknn_pca_iphone, obs = test.iphone.pca$iphonesentiment)",
+                 "postResample(pred = Pred_svm_cv_pca_iphone, obs = test.iphone.pca$iphonesentiment)"), 
+         new = c("RF_RFPack", "RF_Caret", "KKNN", "SVM"))
+            
 
-
-
-
-#### NZV set ####
+#### APPROACH: NZV set ####
 
 # split the data 
-iphone.nzv.partition <- createDataPartition(iphone_un_nozv$iphonesentiment, times = 1, p = .7, 
-                                        list = FALSE)
+iphone.nzv.partition <- createDataPartition(iphone_un_nozv$iphonesentiment, times = 1, p = .7, list = FALSE)
 iphone_nzv_train <- iphone_un_nozv[iphone.nzv.partition,]
 iphone_nzv_test <- iphone_un_nozv[-iphone.nzv.partition,]
 iphone_nzv_train$iphonesentiment <- as.factor(iphone_nzv_train$iphonesentiment)
 iphone_nzv_test$iphonesentiment <- as.factor(iphone_nzv_test$iphonesentiment)
 
-## RF
-control <- trainControl(method = "repeatedcv", number = 10, repeats = 2, returnData = T)
-
-# best mtry 
-iph_nzv_vector <- names(iphone_nzv_train)
-iph_nzv_vec_sen <- iph_nzv_vector[14] # vector name sentiment
-iph_nzv_vec_rest <- iph_nzv_vector[1:13]
-
-mtry_rf_nzv_iphone <- tuneRF(iphone_nzv_train[,iph_nzv_vec_rest], iphone_nzv_train[,iph_nzv_vec_sen], 
+## Model 1: RF with RF package
+mtry_rf_nzv_iphone <- tuneRF(iphone_nzv_train[,-14], iphone_nzv_train[,14], 
                              ntreeTry = 100, stepFactor = 2, improve = 0.05, trace = TRUE, plot = TRUE)
 
-rf_nzv_iphone_mdl <- randomForest(y = iphone_nzv_train[,iph_nzv_vec_sen], x = iphone_nzv_train[,iph_nzv_vec_rest], 
+rf_nzv_iphone_mdl <- randomForest(y = iphone_nzv_train[,14], x = iphone_nzv_train[,-14], 
                                   importance = T, ntree = 100, mtry = 3, trControl = control)
-
+## Model 2: RF with caret package
 rf_nzv_iphone_mdl_car <- caret::train(iphonesentiment~., data = iphone_nzv_train, 
                                       method = "rf", trControl=control, tuneLength = 2)
-## Kknn
+## Model 3: RF with train.knn 
 kknn_nzv_iphone_mdl <- train.kknn(formula = iphonesentiment~., data = iphone_nzv_train, kmax = 11,
                                  distance = 2, kernel = "optimal", trControl = control)
-
-kknn_nzv_iphone_mdl_cv <- cv.kknn(formula = iphonesentiment~., data = iphone_nzv_train,kcv = 10)
-
-## C5.0
-C5iphone_nzv_train <- iphone_nzv_train
-C5iphone_nzv_train$iphonesentiment <- as.factor(C5iphone_nzv_train$iphonesentiment)
-
-C5_nzv_iphone_mdl <- C50::C5.0(x = C5iphone_nzv_train[,iph_nzv_vec_rest], 
-                               y = C5iphone_nzv_train$iphonesentiment, trControl = control)
-# SVM
+## Model 4: RF with train.knn 
 svm_nzv_iphone_mdl <- svm(formula = iphonesentiment~., data = iphone_nzv_train, trControl = control, scale = T)
 
 ## predict 
-pred_rf_iph_nzv_caret <- predict(rf_nzv_iphone_mdl_car,iphone_nzv_test)
 pred_rf_iph_nzv_rfmdl <- predict(rf_nzv_iphone_mdl,iphone_nzv_test)
+pred_rf_iph_nzv_caret <- predict(rf_nzv_iphone_mdl_car,iphone_nzv_test)
 pred_kknn_iph_nzv <- predict(kknn_nzv_iphone_mdl,iphone_nzv_test)
-pred_C5_nzv_iphone_mdl <- predict(C5_nzv_iphone_mdl,iphone_nzv_test)
 pred_svm_nzv_iphone_mdl <- predict(svm_nzv_iphone_mdl,iphone_nzv_test)
 
 # postresamples 
-PR_rf_iph_nzv_caret <- postResample(pred = pred_rf_iph_nzv_caret, obs = iphone_nzv_test$iphonesentiment)
-PR_rf_iph_nzv_rfmdl <- postResample(pred = pred_rf_iph_nzv_rfmdl, obs = iphone_nzv_test$iphonesentiment)
-PR_kknn_iph_nzv <- postResample(pred = pred_kknn_iph_nzv, obs = iphone_nzv_test$iphonesentiment)
-PR_svm_nzv_iphone_mdl <- postResample(pred = pred_svm_nzv_iphone_mdl, obs = iphone_nzv_test$iphonesentiment)
+PR_rf_iph_nzv_caret <- as.data.frame(postResample(pred = pred_rf_iph_nzv_caret, obs = iphone_nzv_test$iphonesentiment))
+PR_rf_iph_nzv_rfmdl <- as.data.frame(postResample(pred = pred_rf_iph_nzv_rfmdl, obs = iphone_nzv_test$iphonesentiment))
+PR_kknn_iph_nzv <- as.data.frame(postResample(pred = pred_kknn_iph_nzv, obs = iphone_nzv_test$iphonesentiment))
+PR_svm_nzv_iphone_mdl <- as.data.frame(postResample(pred = pred_svm_nzv_iphone_mdl, obs = iphone_nzv_test$iphonesentiment))
 
-C5iphone_nzv_test <- iphone_nzv_test
-C5iphone_nzv_test$predictsentiment <- pred_C5_nzv_iphone_mdl
-CM_C5_nzv_iphone_mdl <- confusionMatrix(pred_C5_nzv_iphone_mdl, C5iphone_nzv_test$predictsentiment)
-PR_C5_nzv_iphone_mdl <- postResample(pred_C5_nzv_iphone_mdl, C5iphone_nzv_test$predictsentiment)
-
-# Regression/Classification results
-PR_rf_iph_nzv_caret <- as.data.frame(PR_rf_iph_nzv_caret)
-PR_rf_iph_nzv_rfmdl <- as.data.frame(PR_rf_iph_nzv_rfmdl)
-PR_kknn_iph_nzv <- as.data.frame(PR_kknn_iph_nzv)
-PR_svm_nzv_iphone_mdl <- as.data.frame(PR_svm_nzv_iphone_mdl)
 
 # Results
-Regression_results <- cbind(PR_rf_iph_nzv_caret, PR_rf_iph_nzv_rfmdl, PR_kknn_iph_nzv, PR_svm_nzv_iphone_mdl)
-Classification_results <- cbind(PR_rf_iph_nzv_caret, PR_rf_iph_nzv_rfmdl, PR_kknn_iph_nzv, PR_svm_nzv_iphone_mdl)
+Results_NZV_class <- cbind(PR_rf_iph_nzv_caret, PR_rf_iph_nzv_rfmdl, PR_kknn_iph_nzv, PR_svm_nzv_iphone_mdl)
 
-
+setnames(Results_PCA_class, 
+         old = c("postResample(pred = Pred_rf_pca_iphone, obs = test.iphone.pca$iphonesentiment)",
+                 "postResample(pred = Pred_rf_pca_iphone_car, obs = test.iphone.pca$iphonesentiment)",
+                 "postResample(pred = Pred_kknn_pca_iphone, obs = test.iphone.pca$iphonesentiment)",
+                 "postResample(pred = Pred_svm_cv_pca_iphone, obs = test.iphone.pca$iphonesentiment)"), 
+         new = c("RF_RFPack", "RF_Caret", "KKNN", "SVM"))
 
 
 
