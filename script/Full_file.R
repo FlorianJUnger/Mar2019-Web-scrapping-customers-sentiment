@@ -184,10 +184,37 @@ plot(rfe_resu_58var_ga, type=c("g", "o"))
 galaxy_real <- galaxy_unique_m[, predictors(rfe_resu_58var_ga)]
 
 
+### Principal Component Analysis 
+
+# removes all of your features and replaces them with mathematical representations of their variance
+# data = training and testing from iphone_unique_m (no feature selection) 
+# create object containing centered, scaled PCA components from training set
+# excluded the dependent variable and set threshold to .95
+
+preprocessParams <- preProcess(iphone_unique_m[,-59], method=c("center", "scale", "pca"), thresh = 0.95)
+print(preprocessParams) # need 29 Components to capture 95% of output 
+
+# split the data 
+iphone.unique.partition <- createDataPartition(iphone_unique_m$iphonesentiment, times = 1, p = .7, 
+                                            list = FALSE)
+iphone_unique_train <- iphone_unique_m[iphone.unique.partition,]
+iphone_unique_test <- iphone_unique_m[-iphone.unique.partition,]
+iphone_unique_train$iphonesentiment <- as.factor(iphone_unique_train$iphonesentiment) # change to factor for classification
+iphone_unique_test$iphonesentiment <- as.factor(iphone_unique_test$iphonesentiment)
+
+# use predict to apply pca parameters, create training set, excluding dependent
+train.iphone.pca <- predict(preprocessParams, iphone_unique_train[,-59])
+train.iphone.pca$iphonesentiment <- iphone_unique_train$iphonesentiment
+
+# use predict to apply pca parameters, create test set, excluding dependent
+test.iphone.pca <- predict(preprocessParams, iphone_unique_test[,-59])
+test.iphone.pca$iphonesentiment <- iphone_unique_test$iphonesentiment
+
+
 #### Model development ####
 set.seed(123)
 
-### NZV set 
+#### NZV set ####
 
 # split the data 
 iphone.nzv.partition <- createDataPartition(iphone_un_nozv$iphonesentiment, times = 1, p = .7, 
@@ -197,7 +224,7 @@ iphone_nzv_test <- iphone_un_nozv[-iphone.nzv.partition,]
 iphone_nzv_train$iphonesentiment <- as.factor(iphone_nzv_train$iphonesentiment)
 iphone_nzv_test$iphonesentiment <- as.factor(iphone_nzv_test$iphonesentiment)
 
-# RF
+## RF
 control <- trainControl(method = "repeatedcv", number = 10, repeats = 2, returnData = T)
 
 # best mtry 
@@ -205,44 +232,28 @@ iph_nzv_vector <- names(iphone_nzv_train)
 iph_nzv_vec_sen <- iph_nzv_vector[14] # vector name sentiment
 iph_nzv_vec_rest <- iph_nzv_vector[1:13]
 
-mtry_rf_nzv_iphone <- tuneRF(iphone_nzv_train[,iph_nzv_vec_rest], 
-                             iphone_nzv_train[,iph_nzv_vec_sen], ntreeTry = 100, stepFactor = 2,
-                             improve = 0.05, trace = TRUE, plot = TRUE)
+mtry_rf_nzv_iphone <- tuneRF(iphone_nzv_train[,iph_nzv_vec_rest], iphone_nzv_train[,iph_nzv_vec_sen], 
+                             ntreeTry = 100, stepFactor = 2, improve = 0.05, trace = TRUE, plot = TRUE)
 
-rf_nzv_iphone_mdl <- randomForest(y = iphone_nzv_train[,iph_nzv_vec_sen], 
-                                  x = iphone_nzv_train[,iph_nzv_vec_rest], importance = T, ntree = 100,
-                                  mtry = 3, trControl = control)
+rf_nzv_iphone_mdl <- randomForest(y = iphone_nzv_train[,iph_nzv_vec_sen], x = iphone_nzv_train[,iph_nzv_vec_rest], 
+                                  importance = T, ntree = 100, mtry = 3, trControl = control)
 
-rf_nzv_iphone_mdl_car <- caret::train(iphonesentiment~.,
-                         data = iphone_nzv_train, method = "rf", trControl=control,
-                         tuneLength = 2)
-
-# Kknn
+rf_nzv_iphone_mdl_car <- caret::train(iphonesentiment~., data = iphone_nzv_train, 
+                                      method = "rf", trControl=control, tuneLength = 2)
+## Kknn
 kknn_nzv_iphone_mdl <- train.kknn(formula = iphonesentiment~., data = iphone_nzv_train, kmax = 11,
                                  distance = 2, kernel = "optimal", trControl = control)
 
-kknn_nzv_iphone_mdl_cv <- cv.kknn(formula = iphonesentiment~., data = iphone_nzv_train,
-                                  kcv = 10)
+kknn_nzv_iphone_mdl_cv <- cv.kknn(formula = iphonesentiment~., data = iphone_nzv_train,kcv = 10)
 
-# C5.0
+## C5.0
 C5iphone_nzv_train <- iphone_nzv_train
-C5iphone_nzv_train$iphonesentiment <- as.factor( #change to factor
-  C5iphone_nzv_train$iphonesentiment)
+C5iphone_nzv_train$iphonesentiment <- as.factor(C5iphone_nzv_train$iphonesentiment)
 
 C5_nzv_iphone_mdl <- C50::C5.0(x = C5iphone_nzv_train[,iph_nzv_vec_rest], 
                                y = C5iphone_nzv_train$iphonesentiment, trControl = control)
-
 # SVM
-svm_nzv_iphone_mdl <- svm(formula = iphonesentiment~., data = iphone_nzv_train, 
-                            trControl = control, scale = T)
-
-# Models
-svm_nzv_iphone_mdl
-C5_nzv_iphone_mdl
-kknn_nzv_iphone_mdl_cv
-kknn_nzv_iphone_mdl
-rf_nzv_iphone_mdl
-rf_nzv_iphone_mdl_car
+svm_nzv_iphone_mdl <- svm(formula = iphonesentiment~., data = iphone_nzv_train, trControl = control, scale = T)
 
 ## predict 
 pred_rf_iph_nzv_caret <- predict(rf_nzv_iphone_mdl_car,iphone_nzv_test)
