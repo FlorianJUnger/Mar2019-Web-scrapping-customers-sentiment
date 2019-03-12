@@ -64,7 +64,6 @@ iphone_unique_m <- unique(iphone_matr) # from 12973 obs to 2582
 galaxy_unique_m <- unique(galaxy_matr) # from 12973 obs to 2566
 
 
-
 ## Correlation Matrix with solely iPhone data  
 
 iphone_vars <- c("iphone", "ios", "iphonecampos", "iphonecamneg", "iphonecamunc", 
@@ -132,7 +131,6 @@ iphone_nzv <- nearZeroVar(iphone_unique_m, saveMetrics = F) # all NZV columns
 
 iphone_un_nozv <- iphone_unique_m[,-iphone_nzv] # final set
 
-
 # Galaxy dataset without duplicates
 galaxy_nzv_metr <- nearZeroVar(galaxy_unique_m, saveMetrics = T)
 sum(galaxy_nzv_metr$nzv=="TRUE") # 45 are near 0 Variance
@@ -196,9 +194,10 @@ iphone.nzv.partition <- createDataPartition(iphone_un_nozv$iphonesentiment, time
                                         list = FALSE)
 iphone_nzv_train <- iphone_un_nozv[iphone.nzv.partition,]
 iphone_nzv_test <- iphone_un_nozv[-iphone.nzv.partition,]
+iphone_nzv_train$iphonesentiment <- as.factor(iphone_nzv_train$iphonesentiment)
+iphone_nzv_test$iphonesentiment <- as.factor(iphone_nzv_test$iphonesentiment)
 
 # RF
-
 control <- trainControl(method = "repeatedcv", number = 10, repeats = 2, returnData = T)
 
 # best mtry 
@@ -206,20 +205,19 @@ iph_nzv_vector <- names(iphone_nzv_train)
 iph_nzv_vec_sen <- iph_nzv_vector[14] # vector name sentiment
 iph_nzv_vec_rest <- iph_nzv_vector[1:13]
 
-mtry_rf_nzv_iphone <- tuneRF(iphone_nzv_train[iph_nzv_vec_rest], 
-                             iphone_nzv_train$iphonesentiment, ntreeTry = 100, stepFactor = 2,
+mtry_rf_nzv_iphone <- tuneRF(iphone_nzv_train[,iph_nzv_vec_rest], 
+                             iphone_nzv_train[,iph_nzv_vec_sen], ntreeTry = 100, stepFactor = 2,
                              improve = 0.05, trace = TRUE, plot = TRUE)
 
-rf_nzv_iphone_mdl <- randomForest(y = iphone_nzv_train$iphonesentiment, 
-                                  x = iphone_nzv_train[iph_nzv_vec_rest], importance = T, ntree = 100,
-                                  mtry = 2, trControl = control)
+rf_nzv_iphone_mdl <- randomForest(y = iphone_nzv_train[,iph_nzv_vec_sen], 
+                                  x = iphone_nzv_train[,iph_nzv_vec_rest], importance = T, ntree = 100,
+                                  mtry = 3, trControl = control)
 
 rf_nzv_iphone_mdl_car <- caret::train(iphonesentiment~.,
                          data = iphone_nzv_train, method = "rf", trControl=control,
                          tuneLength = 2)
 
 # Kknn
-
 kknn_nzv_iphone_mdl <- train.kknn(formula = iphonesentiment~., data = iphone_nzv_train, kmax = 11,
                                  distance = 2, kernel = "optimal", trControl = control)
 
@@ -227,7 +225,6 @@ kknn_nzv_iphone_mdl_cv <- cv.kknn(formula = iphonesentiment~., data = iphone_nzv
                                   kcv = 10)
 
 # C5.0
-
 C5iphone_nzv_train <- iphone_nzv_train
 C5iphone_nzv_train$iphonesentiment <- as.factor( #change to factor
   C5iphone_nzv_train$iphonesentiment)
@@ -236,7 +233,6 @@ C5_nzv_iphone_mdl <- C50::C5.0(x = C5iphone_nzv_train[,iph_nzv_vec_rest],
                                y = C5iphone_nzv_train$iphonesentiment, trControl = control)
 
 # SVM
-
 svm_nzv_iphone_mdl <- svm(formula = iphonesentiment~., data = iphone_nzv_train, 
                             trControl = control, scale = T)
 
@@ -248,7 +244,6 @@ kknn_nzv_iphone_mdl
 rf_nzv_iphone_mdl
 rf_nzv_iphone_mdl_car
 
-
 ## predict 
 pred_rf_iph_nzv_caret <- predict(rf_nzv_iphone_mdl_car,iphone_nzv_test)
 pred_rf_iph_nzv_rfmdl <- predict(rf_nzv_iphone_mdl,iphone_nzv_test)
@@ -256,7 +251,7 @@ pred_kknn_iph_nzv <- predict(kknn_nzv_iphone_mdl,iphone_nzv_test)
 pred_C5_nzv_iphone_mdl <- predict(C5_nzv_iphone_mdl,iphone_nzv_test)
 pred_svm_nzv_iphone_mdl <- predict(svm_nzv_iphone_mdl,iphone_nzv_test)
 
-# postresamples
+# postresamples 
 PR_rf_iph_nzv_caret <- postResample(pred = pred_rf_iph_nzv_caret, obs = iphone_nzv_test$iphonesentiment)
 PR_rf_iph_nzv_rfmdl <- postResample(pred = pred_rf_iph_nzv_rfmdl, obs = iphone_nzv_test$iphonesentiment)
 PR_kknn_iph_nzv <- postResample(pred = pred_kknn_iph_nzv, obs = iphone_nzv_test$iphonesentiment)
@@ -264,12 +259,18 @@ PR_svm_nzv_iphone_mdl <- postResample(pred = pred_svm_nzv_iphone_mdl, obs = ipho
 
 C5iphone_nzv_test <- iphone_nzv_test
 C5iphone_nzv_test$predictsentiment <- pred_C5_nzv_iphone_mdl
-PR_C5_nzv_iphone_mdl <- confusionMatrix(pred_C5_nzv_iphone_mdl, C5iphone_nzv_test$predictsentiment)
+CM_C5_nzv_iphone_mdl <- confusionMatrix(pred_C5_nzv_iphone_mdl, C5iphone_nzv_test$predictsentiment)
+PR_C5_nzv_iphone_mdl <- postResample(pred_C5_nzv_iphone_mdl, C5iphone_nzv_test$predictsentiment)
 
-#PR_C5_nzv_iphone_mdl <- postResample(pred = pred_C5_nzv_iphone_mdl, obs = iphone_nzv_test$iphonesentiment)
+# Regression/Classification results
+PR_rf_iph_nzv_caret <- as.data.frame(PR_rf_iph_nzv_caret)
+PR_rf_iph_nzv_rfmdl <- as.data.frame(PR_rf_iph_nzv_rfmdl)
+PR_kknn_iph_nzv <- as.data.frame(PR_kknn_iph_nzv)
+PR_svm_nzv_iphone_mdl <- as.data.frame(PR_svm_nzv_iphone_mdl)
 
-
-
+# Results
+Regression_results <- cbind(PR_rf_iph_nzv_caret, PR_rf_iph_nzv_rfmdl, PR_kknn_iph_nzv, PR_svm_nzv_iphone_mdl)
+Classification_results <- cbind(PR_rf_iph_nzv_caret, PR_rf_iph_nzv_rfmdl, PR_kknn_iph_nzv, PR_svm_nzv_iphone_mdl)
 
 
 
