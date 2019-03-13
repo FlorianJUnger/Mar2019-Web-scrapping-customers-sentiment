@@ -402,6 +402,8 @@ rf_nzv_i_A2_down <- randomForest(y = iph.nzv.down.train[,14], x = iph.nzv.down.t
 # test
 pre_rf_A2_test_down <- predict(rf_nzv_i_A2_down ,iph.nzv.down.test)
 A2_test_down <- summary(pre_rf_A2_test_down)
+postResample(pred = pre_rf_A2_test_down, obs = iph.nzv.down.test$iphonesentiment) #A: 0.35 K: 0.22
+
 
 ## UpSampling manually  
 
@@ -423,6 +425,7 @@ rf_nzv_i_A2_up <- randomForest(y = iph.nzv.up.train[,14], x = iph.nzv.up.train[,
 # test
 pre_rf_A2_test_up <- predict(rf_nzv_i_A2_up ,iph.nzv.up.test)
 A2_test_up <- summary(pre_rf_A2_test_up)
+postResample(pred = pre_rf_A2_test_up, obs = iph.nzv.up.test$iphonesentiment) #A: 0.7 K: 0.65 BEST!!
 
 # Visualise impact of class imbalance tactics Approach 2 
 class_imb_test2down <- melt(rbind(A2_test_down))
@@ -437,16 +440,13 @@ ggplot(class_imb_test2up, aes(x = Var2, y = value/sum(value), fill = Var2))+ geo
 # Approach 2 appears to be working the best
 
 
+#### Use Approach 2 Upscale and Downscale models on the large matrix
 
+large_matrix$iphonesentiment_rf_up <- predict(rf_nzv_i_A2_up, large_matrix)
+histogram(large_matrix$iphonesentiment_rf_up) # more accurate
 
-
-
-
-
-
-
-
-
+large_matrix$iphonesentiment_rf_down <- predict(rf_nzv_i_A2_down, large_matrix)
+histogram(large_matrix$iphonesentiment_rf_down)
 
 
 
