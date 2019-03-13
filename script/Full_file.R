@@ -336,7 +336,7 @@ histogram(large_matrix$iphonesentiment_RF) #class imbalance
 # where is the class imbalance coming from?
 # need to check the results for the class imbalance before training the model 
 
-### Class imbalance 
+#### Class imbalance & tactics ####
 
 class_imb <- melt(summary(iphone_nzv_train$iphonesentiment)) # class imbalance in big matrix stems from 
 class_imb$variable <- c(0:5)
@@ -344,6 +344,7 @@ class_imb$variable <- c(0:5)
 ggplot(class_imb, aes(x = variable, y = value, fill = variable))+ geom_bar(stat = "identity")+
   ggtitle("Class imbalance of training set")+xlab("Sentiment category from 0-5")+ylab("Count")
 
+### Approach 1: trainControl up/downsapling
 ## train models
 # upSample 
 upcontrol <- trainControl(method = "repeatedcv", number = 10, repeats = 2, returnData = T, sampling = "up")
@@ -375,6 +376,60 @@ neutral_test <- summary(pre_rf_test_neutral)
 class_imb_test <- melt(rbind(up_test, down_test, neutral_test))
 ggplot(class_imb_test, aes(x = Var2, y = value, fill = Var2))+ geom_bar(stat = "identity")+
   facet_wrap(~Var1)+ggtitle("Tactics on class imbalance problem")+xlab("Sentiment category from 0-5")+ylab("Count")
+ # it appeats to be not working 
+
+### Approach 2: upSample/Downsample function 
+
+## DownSampling manually  
+# change to factor
+iphone_un_nozv$iphonesentiment <- as.factor(iphone_un_nozv$iphonesentiment) 
+
+# downsample whole set
+iphone_nzv_full_d <- downSample(x = iphone_un_nozv, y = iphone_un_nozv$iphonesentiment)
+table(iphone_nzv_full_d$iphonesentiment)
+
+# split the data
+set.seed(123)
+iph.nzv.down.partition <- createDataPartition(iphone_nzv_full_d$iphonesentiment, times = 1, p = .7, list = FALSE)
+iph.nzv.down.train <- iphone_nzv_full_d[iph.nzv.down.partition,]
+iph.nzv.down.test <- iphone_nzv_full_d[-iph.nzv.down.partition,]
+iph.nzv.down.train$Class <- NULL
+iph.nzv.down.test$Class <- NULL
+
+# train
+rf_nzv_i_A2_down <- randomForest(y = iph.nzv.down.train[,14], x = iph.nzv.down.train[,-14], 
+                              importance = T, ntree = 100, mtry = 3, trControl = control)
+# test
+pre_rf_A2_test_down <- predict(rf_nzv_i_A2_down ,iph.nzv.down.test)
+summary(pre_rf_A2_test_down)
+
+## UpSampling manually  
+
+# downsample whole set
+iphone_nzv_full_up <- upSample(x = iphone_un_nozv, y = iphone_un_nozv$iphonesentiment)
+table(iphone_nzv_full_up$iphonesentiment)
+
+# split the data
+set.seed(123)
+iph.nzv.up.partition <- createDataPartition(iphone_nzv_full_up$iphonesentiment, times = 1, p = .7, list = FALSE)
+iph.nzv.up.train <- iphone_nzv_full_up[iph.nzv.up.partition,]
+iph.nzv.up.test <- iphone_nzv_full_up[-iph.nzv.up.partition,]
+iph.nzv.up.train$Class <- NULL
+iph.nzv.up.test$Class <- NULL
+
+# train
+rf_nzv_i_A2_up <- randomForest(y = iph.nzv.up.train[,14], x = iph.nzv.up.train[,-14], 
+                                 importance = T, ntree = 100, mtry = 3, trControl = control)
+# test
+pre_rf_A2_test_up <- predict(rf_nzv_i_A2_up ,iph.nzv.up.test)
+summary(pre_rf_A2_test_up)
+
+
+# now you need to compare them from a percentage point of view
+# apply all 5 sampling methods on the big matrix ( from RF)
+
+
+
 
 
 
