@@ -401,7 +401,7 @@ rf_nzv_i_A2_down <- randomForest(y = iph.nzv.down.train[,14], x = iph.nzv.down.t
                               importance = T, ntree = 100, mtry = 3, trControl = control)
 # test
 pre_rf_A2_test_down <- predict(rf_nzv_i_A2_down ,iph.nzv.down.test)
-summary(pre_rf_A2_test_down)
+A2_test_down <- summary(pre_rf_A2_test_down)
 
 ## UpSampling manually  
 
@@ -422,11 +422,22 @@ rf_nzv_i_A2_up <- randomForest(y = iph.nzv.up.train[,14], x = iph.nzv.up.train[,
                                  importance = T, ntree = 100, mtry = 3, trControl = control)
 # test
 pre_rf_A2_test_up <- predict(rf_nzv_i_A2_up ,iph.nzv.up.test)
-summary(pre_rf_A2_test_up)
+A2_test_up <- summary(pre_rf_A2_test_up)
+
+# Visualise impact of class imbalance tactics Approach 2 
+class_imb_test2down <- melt(rbind(A2_test_down))
+class_imb_test2up <- melt(rbind(A2_test_up))
+
+ggplot(class_imb_test2down, aes(x = Var2, y = value/sum(value), fill = Var2))+ geom_bar(stat = "identity")+
+  facet_wrap(~Var1)+ggtitle("Tactics 2 on class imbalance problem")+xlab("Sentiment category from 0-5")+ylab("Count")
+
+ggplot(class_imb_test2up, aes(x = Var2, y = value/sum(value), fill = Var2))+ geom_bar(stat = "identity")+
+  facet_wrap(~Var1)+ggtitle("Tactics 2 on class imbalance problem")+xlab("Sentiment category from 0-5")+ylab("Count")
+
+# Approach 2 appears to be working the best
 
 
-# now you need to compare them from a percentage point of view
-# apply all 5 sampling methods on the big matrix ( from RF)
+
 
 
 
