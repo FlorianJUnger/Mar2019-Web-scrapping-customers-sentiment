@@ -4,6 +4,7 @@
 # Amazon Web Scraping
 
 
+
 #### STEP I: Uploading datasets and setting up computational environment ####
 
 
@@ -155,7 +156,6 @@ set.seed(123)
 RFE_ctrl <- rfeControl(functions = rfFuncs, method = "repeatedcv", # RF, cross-validation 
                    repeats = 5, verbose = FALSE)
 
-
 ## iPhone (all variabels)
 start_rfe_58var <- Sys.time()
 rfe_resu_58var <- rfe(iphone_unique_m[,1:58], 
@@ -229,10 +229,11 @@ str(test.iphone.pca)
 str(train.iphone.pca)
 
 
+
 #### STEP 4: Model development ####
 
-set.seed(123)
 
+set.seed(123)
 
 ### APPROACH: PCA data ###
 
@@ -350,7 +351,8 @@ histogram(large_matrix$iphonesentiment_RF) #class imbalance
 
 
 
-#### Class imbalance & tactics ####
+#### STEP 5: Class imbalance & tactics ####
+
 
 class_imb <- melt(summary(iphone_nzv_train$iphonesentiment)) # class imbalance in big matrix stems from 
 class_imb$variable <- c(0:5)
@@ -358,8 +360,11 @@ class_imb$variable <- c(0:5)
 ggplot(class_imb, aes(x = variable, y = value, fill = variable))+ geom_bar(stat = "identity")+
   ggtitle("Class imbalance of training set")+xlab("Sentiment category from 0-5")+ylab("Count")
 
+
 ### Approach 1: trainControl up/downsapling
-## train models
+
+## Train models
+
 # upSample 
 upcontrol <- trainControl(method = "repeatedcv", number = 10, repeats = 2, returnData = T, sampling = "up")
 
@@ -372,7 +377,7 @@ downcontrol <- trainControl(method = "repeatedcv", number = 10, repeats = 2, ret
 rf_nzv_iph_down <- randomForest(y = iphone_nzv_train[,14], x = iphone_nzv_train[,-14], 
                               importance = T, ntree = 100, mtry = 3, trControl = downcontrol)
 
-## test models
+## Test models
 
 # upSample 
 pre_rf_test_up <- predict(rf_nzv_iph_up, iphone_nzv_test)
@@ -392,9 +397,11 @@ ggplot(class_imb_test, aes(x = Var2, y = value, fill = Var2))+ geom_bar(stat = "
   facet_wrap(~Var1)+ggtitle("Tactics on class imbalance problem")+xlab("Sentiment category from 0-5")+ylab("Count")
  # it appeats to be not working 
 
+
 ### Approach 2: upSample/Downsample function 
 
-## DownSampling manually  
+## DownSampling manually 
+
 # change to factor
 iphone_un_nozv$iphonesentiment <- as.factor(iphone_un_nozv$iphonesentiment) 
 
@@ -450,11 +457,12 @@ ggplot(class_imb_test2down, aes(x = Var2, y = value/sum(value), fill = Var2))+ g
 
 ggplot(class_imb_test2up, aes(x = Var2, y = value/sum(value), fill = Var2))+ geom_bar(stat = "identity")+
   facet_wrap(~Var1)+ggtitle("Tactics 2 on class imbalance problem")+xlab("Sentiment category from 0-5")+ylab("Count")
+   # Approach 2 appears to be working the best
 
-# Approach 2 appears to be working the best
 
 
-#### Use Approach 2 Upscale and Downscale models on the large matrix
+#### STEP 6: Use Approach 2 Upscale and Downscale models on the large matrix ####
+
 
 large_matrix$iphonesentiment_rf_up <- predict(rf_nzv_i_A2_up, large_matrix)
 histogram(large_matrix$iphonesentiment_rf_up) # more accurate
