@@ -330,20 +330,51 @@ ggplot(Res_Kappa_melt, aes(x = variable,y=value,fill=variable)) + geom_bar(stat 
 ggplot(Res_Acc_melt, aes(x = variable,y=value,fill=variable)) + geom_bar(stat = "identity")+facet_wrap(~Approach)+
   coord_flip()+ggtitle("Accuracy Comparison between NZV and PCA Approach")
 
-
-#### Apply model to the new matrix ####
-# same preprocess as t
+# RF package in the NZV Approach offers the best Kappa and Accuracy 
 large_matrix$iphonesentiment_RF <- predict(rf_nzv_iphone_mdl, large_matrix)
 histogram(large_matrix$iphonesentiment_RF) #class imbalance
+# where is the class imbalance coming from?
+# need to check the results for the class imbalance before training the model 
 
+### Class imbalance 
 
+class_imb <- melt(summary(iphone_nzv_train$iphonesentiment)) # class imbalance in big matrix stems from 
+class_imb$variable <- c(0:5)
 
+ggplot(class_imb, aes(x = variable, y = value, fill = variable))+ geom_bar(stat = "identity")+
+  ggtitle("Class imbalance of training set")+xlab("Sentiment category from 0-5")+ylab("Count")
 
+## train models
+# upSample 
+upcontrol <- trainControl(method = "repeatedcv", number = 10, repeats = 2, returnData = T, sampling = "up")
 
+rf_nzv_iph_up <- randomForest(y = iphone_nzv_train[,14], x = iphone_nzv_train[,-14], 
+                                  importance = T, ntree = 100, mtry = 3, trControl = upcontrol)
 
+# downSample 
+downcontrol <- trainControl(method = "repeatedcv", number = 10, repeats = 2, returnData = T, sampling = "down")
 
+rf_nzv_iph_down <- randomForest(y = iphone_nzv_train[,14], x = iphone_nzv_train[,-14], 
+                              importance = T, ntree = 100, mtry = 3, trControl = downcontrol)
 
+## test models
 
+# upSample 
+pre_rf_test_up <- predict(rf_nzv_iph_up, iphone_nzv_test)
+up_test <- summary(pre_rf_test_up)
+
+# downSample
+pre_rf_test_down <- predict(rf_nzv_iph_down, iphone_nzv_test)
+down_test <- summary(pre_rf_test_down)
+
+# normal 
+pre_rf_test_neutral <- predict(rf_nzv_iphone_mdl, iphone_nzv_test)
+neutral_test <- summary(pre_rf_test_neutral)
+
+# Visualise impact of class imbalance tactics 
+class_imb_test <- melt(rbind(up_test, down_test, neutral_test))
+ggplot(class_imb_test, aes(x = Var2, y = value, fill = Var2))+ geom_bar(stat = "identity")+
+  facet_wrap(~Var1)+ggtitle("Tactics on class imbalance problem")+xlab("Sentiment category from 0-5")+ylab("Count")
 
 
 
